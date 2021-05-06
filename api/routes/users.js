@@ -2,6 +2,7 @@ const router = require("express").Router();
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const checkAuth = require("../middleware/checkAuth");
 
 const User = require("../models/user");
 
@@ -99,7 +100,7 @@ router.post("/login", (req, res) => {
 // Get Users
 router.get("/", (req, res) => {
   User.find()
-    // .select("email _id")
+    .select("-password -__v")
     .exec()
     .then((docs) => {
       const response = {
@@ -115,10 +116,10 @@ router.get("/", (req, res) => {
 });
 
 // Get User by Id
-router.get("/:userId", (req, res) => {
+router.get("/:userId", checkAuth, (req, res) => {
   const id = req.params.userId;
   User.findById(id)
-    // .select("email _id")
+    .select("-password -__v")
     .exec()
     .then((doc) => {
       if (doc) {
@@ -134,7 +135,7 @@ router.get("/:userId", (req, res) => {
 });
 
 // Update User
-router.put("/:userId", (req, res) => {
+router.put("/:userId", checkAuth, (req, res) => {
   const id = req.params.userId;
   const updateOps = {};
 
@@ -156,7 +157,7 @@ router.put("/:userId", (req, res) => {
 });
 
 // Delete User
-router.delete("/:userId", (req, res) => {
+router.delete("/:userId", checkAuth, (req, res) => {
   const id = req.params.userId;
   User.remove({ _id: id })
     .exec()
