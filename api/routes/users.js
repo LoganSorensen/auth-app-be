@@ -25,6 +25,10 @@ router.post("/register", (req, res) => {
               _id: new mongoose.Types.ObjectId(),
               email: req.body.email,
               password: hash,
+              name: "",
+              bio: "",
+              phone: "",
+              photo: "",
             });
             user
               .save()
@@ -89,6 +93,79 @@ router.post("/login", (req, res) => {
       res.status(500).json({
         error: err,
       });
+    });
+});
+
+// Get Users
+router.get("/", (req, res) => {
+  User.find()
+    // .select("email _id")
+    .exec()
+    .then((docs) => {
+      const response = {
+        count: docs.length,
+        users: docs,
+      };
+      res.status(200).json(response);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: err });
+    });
+});
+
+// Get User by Id
+router.get("/:userId", (req, res) => {
+  const id = req.params.userId;
+  User.findById(id)
+    // .select("email _id")
+    .exec()
+    .then((doc) => {
+      if (doc) {
+        res.status(200).json(doc);
+      } else {
+        res.status(404).json({ message: "No user found" });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: err });
+    });
+});
+
+// Update User
+router.put("/:userId", (req, res) => {
+  const id = req.params.userId;
+  const updateOps = {};
+
+  for (const ops of req.body) {
+    updateOps[ops.propName] = ops.value;
+  }
+
+  User.updateOne({ _id: id }, { $set: updateOps })
+    .exec()
+    .then((result) => {
+      res.status(200).json({
+        message: "User updated",
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: err });
+    });
+});
+
+// Delete User
+router.delete("/:userId", (req, res) => {
+  const id = req.params.userId;
+  User.remove({ _id: id })
+    .exec()
+    .then((result) => {
+      res.status(200).json({ message: "User deleted" });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: err });
     });
 });
 
