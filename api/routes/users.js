@@ -31,12 +31,26 @@ router.post("/register", (req, res) => {
               phone: "",
               photo: "",
             });
+
+            const token = jwt.sign(
+              {
+                email: user.email,
+                userId: user._id,
+              },
+              process.env.JWT_KEY,
+              {
+                expiresIn: "1h",
+              }
+            );
+
             user
               .save()
               .then((result) => {
                 console.log(result);
                 res.status(201).json({
                   message: "User created",
+                  token: token,
+                  id: result._id,
                 });
               })
               .catch((err) => {
@@ -82,6 +96,7 @@ router.post("/login", (req, res) => {
           return res.status(200).json({
             message: "Auth successful",
             token: token,
+            id: user[0]._id,
           });
         }
         return res.status(401).json({
@@ -100,7 +115,7 @@ router.post("/login", (req, res) => {
 // Get Users
 router.get("/", (req, res) => {
   User.find()
-    .select("-password -__v")
+    // .select("-password -__v")
     .exec()
     .then((docs) => {
       const response = {
@@ -119,7 +134,7 @@ router.get("/", (req, res) => {
 router.get("/:userId", checkAuth, (req, res) => {
   const id = req.params.userId;
   User.findById(id)
-    .select("-password -__v")
+    .select("-password -__v -_id")
     .exec()
     .then((doc) => {
       if (doc) {
@@ -138,6 +153,8 @@ router.get("/:userId", checkAuth, (req, res) => {
 router.put("/:userId", checkAuth, (req, res) => {
   const id = req.params.userId;
   const updateOps = {};
+
+  console.log(req.body);
 
   for (const ops of req.body) {
     updateOps[ops.propName] = ops.value;
