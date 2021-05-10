@@ -188,9 +188,9 @@ router.put("/:userId", checkAuth, upload.single("userImage"), (req, res) => {
   for (const ops of data) {
     updateOps[ops.propName] = ops.value;
   }
-  updateOps.photo = `localhost:5000/${req.file.path}`;
 
-  console.log("HERE", updateOps);
+  if (req.file) updateOps.photo = `http://localhost:5000/${req.file.path}`;
+
 
   User.updateOne({ _id: id }, { $set: updateOps })
     .exec()
