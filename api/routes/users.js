@@ -2,6 +2,35 @@ const router = require("express").Router();
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./uploads");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + "-" + Date.now() + file.originalname);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+    // accept a file
+    cb(null, true);
+  } else {
+    // reject a file
+    cb(null, false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 1024 * 1024 * 5,
+  },
+  fileFilter: fileFilter,
+});
+
 const checkAuth = require("../middleware/checkAuth");
 
 const User = require("../models/user");
@@ -150,15 +179,18 @@ router.get("/:userId", checkAuth, (req, res) => {
 });
 
 // Update User
-router.put("/:userId", checkAuth, (req, res) => {
+router.put("/:userId", checkAuth, upload.single("userImage"), (req, res) => {
   const id = req.params.userId;
   const updateOps = {};
 
-  console.log(req.body);
+  const data = JSON.parse(req.body.data);
 
-  for (const ops of req.body) {
+  for (const ops of data) {
     updateOps[ops.propName] = ops.value;
   }
+  updateOps.photo = `localhost:5000/${req.file.path}`;
+
+  console.log("HERE", updateOps);
 
   User.updateOne({ _id: id }, { $set: updateOps })
     .exec()
