@@ -141,6 +141,80 @@ router.post("/login", (req, res) => {
     });
 });
 
+// Login with Google Auth
+router.post("/login/google", (req, res) => {
+  User.find({ email: req.body.email })
+    .exec()
+    .then((user) => {
+      if (user.length === 0) {
+        bcrypt.hash(req.body.googleId, 10, (err, hash) => {
+          if (err) {
+            return res.status(500).json({
+              error: err,
+            });
+          } else {
+            const user = new User({
+              _id: new mongoose.Types.ObjectId(),
+              email: req.body.email,
+              name: req.body.name,
+              password: hash,
+              bio: "",
+              phone: "",
+              photo: req.body.imageUrl,
+            });
+
+            const token = jwt.sign(
+              {
+                email: user.email,
+                userId: user._id,
+              },
+              process.env.JWT_KEY,
+              {
+                expiresIn: "1h",
+              }
+            );
+
+            user
+              .save()
+              .then((result) => {
+                console.log(result);
+                res.status(201).json({
+                  message: "User created",
+                  token: token,
+                  id: result._id,
+                });
+              })
+              .catch((err) => {
+                console.log(err);
+                res.status(500).json({ error: err });
+              });
+          }
+        });
+      } else if (user.length === 1) {
+        const token = jwt.sign(
+          {
+            email: user[0].email,
+            userId: user[0]._id,
+          },
+          process.env.JWT_KEY,
+          {
+            expiresIn: "1h",
+          }
+        );
+        return res.status(200).json({
+          message: "Auth successful",
+          token: token,
+          id: user[0]._id,
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: err });
+    });
+  // res.status(200).json({ message: "auth successful" });
+});
+
 // Get Users
 router.get("/", (req, res) => {
   User.find()
@@ -190,7 +264,6 @@ router.put("/:userId", checkAuth, upload.single("userImage"), (req, res) => {
   }
 
   if (req.file) updateOps.photo = `http://localhost:5000/${req.file.path}`;
-
 
   User.updateOne({ _id: id }, { $set: updateOps })
     .exec()
